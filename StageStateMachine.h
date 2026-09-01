@@ -187,19 +187,17 @@ bool stageSetOuterMm(float outerMm) {
     outerMm = 0.0f;
   }
 
-  float innerTargetMm = innerAxis.targetMm();
-  if (outerMm > innerTargetMm) {
-    outerMm = innerTargetMm;
-  }
-
-  if (stageTargetWouldViolateOuterLimit(outerMm)) {
+  // An OUTER command moves both translation axes to the same target.
+  // Check both limits before changing either target. 
+  if (stageTargetWouldViolateOuterLimit(outerMm) ||
+      stageTargetWouldViolateInnerLimit(outerMm)) {
     return false;
   }
 
   outerAxis.setTargetMm(outerMm);
-  stageApplyInnerSafety();
+  innerAxis.setTargetMm(outerMm);
   return true;
-}
+  }
 
 bool stageSetInnerMm(float innerMm) {
   if (!stageCanAcceptMotion()) {
