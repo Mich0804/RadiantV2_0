@@ -307,6 +307,10 @@ void stageUpdate() {
     updateAS5600(innerSpindleEncoder);
   }
 
+  const float outerMeasuredMm = as5600PositionMm(outerSpindleEncoder, OUTER_AS5600_POSITION_SIGN);
+
+  const float innerMeasuredMm = as5600PositionMm(innerSpindleEncoder, INNER_AS5600_POSITION_SIGN);
+
   if (stageCheckPlatformCollision()) {
     return;
   }
@@ -338,8 +342,21 @@ void stageUpdate() {
     case NORMAL_RUN:
       stageApplyInnerSafety();
       stageApplyDirectionalLimitStops();
+
+      if (!as5600ValidForControl(outerSpindleEncoder) ||
+          !as5600ValidForControl(innerSpindleEncoder))
+      {
+        stageEnterTranslationFault(
+            "SAFETY: Translation encoder invalid.");
+        return;
+      }
+
+      outerAxis.setMeasuredPositionMm(outerMeasuredMm);
+      innerAxis.setMeasuredPositionMm(innerMeasuredMm);
+
       outerAxis.update();
       innerAxis.update();
+
       stageApplyDirectionalLimitStops();
 
       if (SerialBT.hasClient()) {
@@ -354,8 +371,21 @@ void stageUpdate() {
     case RETURN_TO_ZERO_ON_BT_LOSS:
       stageApplyInnerSafety();
       stageApplyDirectionalLimitStops();
+
+      if (!as5600ValidForControl(outerSpindleEncoder) ||
+          !as5600ValidForControl(innerSpindleEncoder))
+      {
+        stageEnterTranslationFault(
+            "SAFETY: Translation encoder invalid.");
+        return;
+      }
+
+      outerAxis.setMeasuredPositionMm(outerMeasuredMm);
+      innerAxis.setMeasuredPositionMm(innerMeasuredMm);
+
       outerAxis.update();
       innerAxis.update();
+
       stageApplyDirectionalLimitStops();
 
       if (stageAllAtTarget()) {

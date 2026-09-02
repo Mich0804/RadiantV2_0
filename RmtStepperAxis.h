@@ -38,6 +38,12 @@ public:
     commandedSpeed = 0.0f;
   }
 
+  void setMeasuredPositionMm(float measuredMm)
+  {
+    currentSteps = mmToSteps(measuredMm);
+    posFloat = (float)currentSteps;
+  }
+
   void setZero() {
     setCurrentPosition(0);
   }
@@ -161,8 +167,6 @@ public:
 
     long dist = targetSteps - currentSteps;
     if (labs(dist) <= TRANS_POSITION_TOLERANCE_STEPS) {
-      currentSteps = targetSteps;
-      posFloat = (float)targetSteps;
       currentSpeed = 0.0f;
       commandedSpeed = 0.0f;
       stopRMT();
@@ -199,18 +203,6 @@ public:
     }
 
     setDirection(wantDirPositive);
-    posFloat += commandedSpeed * dt;
-    currentSteps = lroundf(posFloat);
-
-    if ((direction > 0 && currentSteps >= targetSteps) ||
-        (direction < 0 && currentSteps <= targetSteps)) {
-      currentSteps = targetSteps;
-      posFloat = (float)targetSteps;
-      currentSpeed = 0.0f;
-      commandedSpeed = 0.0f;
-      stopRMT();
-      return;
-    }
 
     float appliedAbsSpeed = fabsf(commandedSpeed);
     uint32_t nowMs = millis();

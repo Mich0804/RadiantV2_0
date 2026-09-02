@@ -74,6 +74,20 @@ float as5600CountsToMm(int32_t counts) {
   return as5600CountsToRevolutions(counts) * SPINDLE_LEAD_MM_PER_REV;
 }
 
+float as5600PositionMm(
+    const AS5600State &encoder,
+    float positionSign)
+{
+  return positionSign *
+         as5600CountsToMm(encoder.accumulatedCounts);
+}
+
+bool as5600ValidForControl(const AS5600State &encoder)
+{
+  return encoder.connected &&
+         encoder.magnetDetected;
+}
+
 bool readAS5600StatusAndRawAngle(TwoWire &bus, uint8_t &status, uint16_t &rawAngle) {
   bus.beginTransmission(AS5600_ADDRESS);
   bus.write(AS5600_STATUS_REGISTER);

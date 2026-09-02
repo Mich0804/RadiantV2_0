@@ -102,3 +102,8 @@ const float ROT_PID_DEADBAND_COUNTS = 3.0f;
 const uint32_t STATUS_INTERVAL_MS = 250;
 const uint32_t AS5600_UPDATE_INTERVAL_MS = 10;
 const uint32_t AS5600_I2C_FREQUENCY_HZ = 400000;
+
+// AS5600 position signs.
+// Insertion must produce an increasing measured position.
+const float OUTER_AS5600_POSITION_SIGN = -1.0f;
+const float INNER_AS5600_POSITION_SIGN = -1.0f;
