@@ -76,6 +76,10 @@ public:
     return targetSteps - currentSteps;
   }
 
+  float referenceSpeedMmS() const {
+    return currentSpeed / stepsPerMillimeter;
+  }
+
   bool atTarget() const {
     return labs(distanceToGo()) <= TRANS_POSITION_TOLERANCE_STEPS && fabsf(currentSpeed) < 1.0f;
   }

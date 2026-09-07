@@ -6,6 +6,7 @@
 #include "HomingController.h"
 #include "AS5600Encoder.h"
 #include "StageStateMachine.h"
+#include "TelemetryLogger.h"
 #include "CommandHandler.h"
 
 BluetoothSerial SerialBT;
@@ -33,6 +34,7 @@ void loop() {
 
   commandUpdate();
   stageUpdate();
+  telemetryUpdate();
 
   if (millis() - lastStatusMs >= STATUS_INTERVAL_MS) {
     lastStatusMs = millis();

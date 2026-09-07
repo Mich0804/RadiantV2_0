@@ -14,6 +14,10 @@ void commandPrintHelp(Print &out) {
   out.println("  STOP");
   out.println("  ZERO_ROT");
   out.println("  STATUS");
+  out.println("  LOG_START");
+  out.println("  LOG_STOP");
+  out.println("  LOG_DUMP");
+  out.println("  LOG_CLEAR");
 }
 
 void commandReply(Print &out, const char *message) {
@@ -59,6 +63,45 @@ void commandHandleLine(String line, Print &out) {
 
   if (command == "HELP" || command == "?") {
     commandPrintHelp(out);
+    return;
+  }
+
+  if (command == "LOG_START") {
+    telemetryStart();
+    commandReply(out, "OK LOG_START");
+    return;
+  }
+
+  if (command == "LOG_STOP") {
+    telemetryStop();
+    commandReply(out, "OK LOG_STOP");
+    return;
+  }
+
+  if (command == "LOG_CLEAR") {
+    telemetryClear();
+    commandReply(out, "OK LOG_CLEAR");
+    return;
+  }
+
+  if (command == "LOG_DUMP") {
+    if (telemetryRecording) {
+      commandReply(
+          out,
+          "ERR stop logging before dump");
+      return;
+    }
+
+    if (!outerAxis.atTarget() ||
+        !innerAxis.atTarget())
+    {
+      commandReply(
+          out,
+          "ERR motion active; dump rejected");
+      return;
+    }
+
+    telemetryDump(out);
     return;
   }
 

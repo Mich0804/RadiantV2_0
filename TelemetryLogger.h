@@ -1,0 +1,151 @@
+#pragma once
+
+#include "Config.h"
+#include "RmtStepperAxis.h"
+#include "AS5600Encoder.h"
+
+struct TelemetrySample {
+  uint32_t timeMs;
+
+  float outerReferenceMm;
+  float outerMeasuredMm;
+  float outerReferenceVelocityMmS;
+
+  float innerReferenceMm;
+  float innerMeasuredMm;
+  float innerReferenceVelocityMmS;
+};
+
+TelemetrySample telemetryBuffer[LOG_CAPACITY];
+
+size_t telemetryWriteIndex = 0;
+size_t telemetrySampleCount = 0;
+
+bool telemetryRecording = false;
+uint32_t telemetryLastSampleMs = 0;
+
+void telemetryClear()
+{
+  telemetryWriteIndex = 0;
+  telemetrySampleCount = 0;
+  telemetryLastSampleMs = 0;
+}
+
+void telemetryStart()
+{
+  telemetryClear();
+  telemetryRecording = true;
+}
+
+void telemetryStop()
+{
+  telemetryRecording = false;
+}
+
+void telemetryUpdate()
+{
+  if (!telemetryRecording) {
+    return;
+  }
+
+  const uint32_t nowMs = millis();
+
+  if (nowMs - telemetryLastSampleMs <
+      LOG_SAMPLE_INTERVAL_MS)
+  {
+    return;
+  }
+
+  telemetryLastSampleMs = nowMs;
+
+  TelemetrySample &sample =
+      telemetryBuffer[telemetryWriteIndex];
+
+  sample.timeMs = nowMs;
+
+  sample.outerReferenceMm =
+      outerAxis.currentMm();
+
+  sample.outerMeasuredMm =
+      OUTER_AS5600_POSITION_SIGN *
+      as5600CountsToMm(
+          outerSpindleEncoder.accumulatedCounts);
+
+  sample.outerReferenceVelocityMmS =
+      outerAxis.referenceSpeedMmS();
+
+  sample.innerReferenceMm =
+      innerAxis.currentMm();
+
+  sample.innerMeasuredMm =
+      INNER_AS5600_POSITION_SIGN *
+      as5600CountsToMm(
+          innerSpindleEncoder.accumulatedCounts);
+
+  sample.innerReferenceVelocityMmS =
+      innerAxis.referenceSpeedMmS();
+
+  telemetryWriteIndex =
+      (telemetryWriteIndex + 1) % LOG_CAPACITY;
+
+  if (telemetrySampleCount < LOG_CAPACITY) {
+    telemetrySampleCount++;
+  }
+}
+
+void telemetryDump(Print &out)
+{
+  out.println(
+      "LOG_BEGIN,"
+      "time_ms,"
+      "outer_x_ref_mm,"
+      "outer_x_meas_mm,"
+      "outer_v_ref_mm_s,"
+      "inner_x_ref_mm,"
+      "inner_x_meas_mm,"
+      "inner_v_ref_mm_s");
+
+  const size_t oldestIndex =
+      telemetrySampleCount < LOG_CAPACITY
+          ? 0
+          : telemetryWriteIndex;
+
+  for (size_t i = 0;
+       i < telemetrySampleCount;
+       i++)
+  {
+    const size_t index =
+        (oldestIndex + i) % LOG_CAPACITY;
+
+    const TelemetrySample &sample =
+        telemetryBuffer[index];
+
+    out.print("LOG,");
+    out.print(sample.timeMs);
+
+    out.print(",");
+    out.print(sample.outerReferenceMm, 4);
+
+    out.print(",");
+    out.print(sample.outerMeasuredMm, 4);
+
+    out.print(",");
+    out.print(
+        sample.outerReferenceVelocityMmS,
+        4);
+
+    out.print(",");
+    out.print(sample.innerReferenceMm, 4);
+
+    out.print(",");
+    out.print(sample.innerMeasuredMm, 4);
+
+    out.print(",");
+    out.println(
+        sample.innerReferenceVelocityMmS,
+        4);
+  }
+
+  out.print("LOG_END,");
+  out.println(telemetrySampleCount);
+}

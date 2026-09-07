@@ -107,3 +107,6 @@ const uint32_t AS5600_I2C_FREQUENCY_HZ = 400000;
 // Insertion must produce an increasing measured position.
 const float OUTER_AS5600_POSITION_SIGN = -1.0f;
 const float INNER_AS5600_POSITION_SIGN = -1.0f;
+
+const uint32_t LOG_SAMPLE_INTERVAL_MS = 40;
+const size_t LOG_CAPACITY = 1500;
