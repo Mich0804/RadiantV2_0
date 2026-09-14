@@ -436,6 +436,8 @@ void stagePrintStatus(Print &out) {
   out.print(innerAxis.currentMm(), 3);
   out.print(" inner_target_mm=");
   out.print(innerAxis.targetMm(), 3);
+  out.print(" raw_rot_count=");
+  out.print( rotMotorGetCount());
   out.print(" rot_deg=");
   out.print(rotMotorGetDeg(), 2);
   out.print(" rot_target_deg=");
