@@ -19,6 +19,9 @@ struct TelemetrySample {
   float rotationTargetDeg;
   float rotationMeasuredDeg;
   float rotationPidOutputPwm;
+  float rotationPTermPwm;
+  float rotationITermPwm;
+  float rotationDTermPwm;
 };
 
 TelemetrySample telemetryBuffer[LOG_CAPACITY];
@@ -99,6 +102,15 @@ void telemetryUpdate()
   sample.rotationPidOutputPwm =
       (float)rotLastPwmCommand;
 
+  sample.rotationPTermPwm =
+      rotLastPTermPwm;
+
+  sample.rotationITermPwm =
+      rotLastITermPwm;
+
+  sample.rotationDTermPwm =
+      rotLastDTermPwm;
+
   telemetryWriteIndex =
       (telemetryWriteIndex + 1) % LOG_CAPACITY;
 
@@ -120,7 +132,10 @@ void telemetryDump(Print &out)
       "inner_v_ref_mm_s,"
       "rot_target_deg,"
       "rot_meas_deg,"
-      "rot_pid_out_pwm");
+      "rot_pid_out_pwm,"
+      "rot_p_term_pwm,"
+      "rot_i_term_pwm,"
+      "rot_d_term_pwm");
 
   const size_t oldestIndex =
       telemetrySampleCount < LOG_CAPACITY
@@ -169,7 +184,16 @@ void telemetryDump(Print &out)
     out.print(sample.rotationMeasuredDeg, 4);
 
     out.print(",");
-    out.println(sample.rotationPidOutputPwm, 0);
+    out.print(sample.rotationPidOutputPwm, 0);
+
+    out.print(",");
+    out.print(sample.rotationPTermPwm, 4);
+
+    out.print(",");
+    out.print(sample.rotationITermPwm, 4);
+
+    out.print(",");
+    out.println(sample.rotationDTermPwm, 4);
   }
 
   out.print("LOG_END,");
