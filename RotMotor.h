@@ -77,6 +77,7 @@ void rotMotorDriveSigned(int pwmSigned) {
   }
 
   ledcWrite(ROT_PWM, pwmAbs);
+  //ledcWrite(ROT_PWM, 500);
 }
 
 void rotPcntSetupQuadrature(pcnt_unit_t unit, int pinA, int pinB) {
