@@ -3,6 +3,7 @@
 #include "Config.h"
 #include "RmtStepperAxis.h"
 #include "AS5600Encoder.h"
+#include "RotMotor.h"
 
 struct TelemetrySample {
   uint32_t timeMs;
@@ -14,6 +15,10 @@ struct TelemetrySample {
   float innerReferenceMm;
   float innerMeasuredMm;
   float innerReferenceVelocityMmS;
+
+  float rotationTargetDeg;
+  float rotationMeasuredDeg;
+  float rotationPidOutputPwm;
 };
 
 TelemetrySample telemetryBuffer[LOG_CAPACITY];
@@ -85,6 +90,15 @@ void telemetryUpdate()
   sample.innerReferenceVelocityMmS =
       innerAxis.referenceSpeedMmS();
 
+  sample.rotationTargetDeg =
+      rotMotorCountsToDeg(rotTargetCount);
+
+  sample.rotationMeasuredDeg =
+      rotMotorGetDeg();
+
+  sample.rotationPidOutputPwm =
+      (float)rotLastPwmCommand;
+
   telemetryWriteIndex =
       (telemetryWriteIndex + 1) % LOG_CAPACITY;
 
@@ -103,7 +117,10 @@ void telemetryDump(Print &out)
       "outer_v_ref_mm_s,"
       "inner_x_ref_mm,"
       "inner_x_meas_mm,"
-      "inner_v_ref_mm_s");
+      "inner_v_ref_mm_s,"
+      "rot_target_deg,"
+      "rot_meas_deg,"
+      "rot_pid_out_pwm");
 
   const size_t oldestIndex =
       telemetrySampleCount < LOG_CAPACITY
@@ -141,9 +158,18 @@ void telemetryDump(Print &out)
     out.print(sample.innerMeasuredMm, 4);
 
     out.print(",");
-    out.println(
+    out.print(
         sample.innerReferenceVelocityMmS,
         4);
+
+    out.print(",");
+    out.print(sample.rotationTargetDeg, 4);
+
+    out.print(",");
+    out.print(sample.rotationMeasuredDeg, 4);
+
+    out.print(",");
+    out.println(sample.rotationPidOutputPwm, 0);
   }
 
   out.print("LOG_END,");
