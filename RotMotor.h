@@ -25,6 +25,9 @@ volatile int32_t rotEncoderCount = 0;
 float rotTargetCount = 0.0f;
 bool rotPositionMode = false;
 int rotLastPwmCommand = 0;
+float rotLastPTermPwm = 0.0f;
+float rotLastITermPwm = 0.0f;
+float rotLastDTermPwm = 0.0f;
 
 RotPidState rotPid = {
   .kp = ROT_PID_KP,
@@ -181,6 +184,9 @@ float rotMotorPidPosition(float position, float target, RotPidState &state) {
     state.ePrev = 0.0f;
     state.eInt = 0.0f;
     state.initialized = true;
+    rotLastPTermPwm = 0.0f;
+    rotLastITermPwm = 0.0f;
+    rotLastDTermPwm = 0.0f;
     return 0.0f;
   }
 
@@ -194,6 +200,9 @@ float rotMotorPidPosition(float position, float target, RotPidState &state) {
   float error = target - position;
   if (fabsf(error) <= state.deadbandCounts) {
     state.ePrev = error;
+    rotLastPTermPwm = 0.0f;
+    rotLastITermPwm = 0.0f;
+    rotLastDTermPwm = 0.0f;
     return 0.0f;
   }
 
@@ -204,7 +213,15 @@ float rotMotorPidPosition(float position, float target, RotPidState &state) {
   float derivative = (error - state.ePrev) / dt;
   state.ePrev = error;
 
-  float output = state.kp * error + state.ki * state.eInt + state.kd * derivative;
+  rotLastPTermPwm = state.kp * error;
+  rotLastITermPwm = state.ki * state.eInt;
+  rotLastDTermPwm = state.kd * derivative;
+
+  float output =
+      rotLastPTermPwm +
+      rotLastITermPwm +
+      rotLastDTermPwm;
+
   if (output > state.outLimitPwm) output = state.outLimitPwm;
   if (output < -state.outLimitPwm) output = -state.outLimitPwm;
   return output;
@@ -231,6 +248,9 @@ void rotMotorSetTargetCounts(float targetCounts) {
   rotTargetCount = targetCounts;
   rotPositionMode = true;
   rotPid.initialized = false;
+  rotLastPTermPwm = 0.0f;
+  rotLastITermPwm = 0.0f;
+  rotLastDTermPwm = 0.0f;
 }
 
 void rotMotorSetTargetDeg(float targetDeg) {
@@ -241,12 +261,18 @@ void rotMotorZero() {
   rotMotorResetCount(0);
   rotTargetCount = 0.0f;
   rotPid.initialized = false;
+  rotLastPTermPwm = 0.0f;
+  rotLastITermPwm = 0.0f;
+  rotLastDTermPwm = 0.0f;
 }
 
 void rotMotorStop() {
   rotPositionMode = false;
   rotPid.initialized = false;
   rotLastPwmCommand = 0;
+  rotLastPTermPwm = 0.0f;
+  rotLastITermPwm = 0.0f;
+  rotLastDTermPwm = 0.0f;
   rotMotorCoast();
 }
 
