@@ -22,7 +22,14 @@ static const uint32_t ROT_ACCUM_INTERVAL_MS = 5;
 static const int ROT_SIGN = -1;
 
 volatile int32_t rotEncoderCount = 0;
+
+// Final goal and moving reference for the constant-speed trajectory.
 float rotTargetCount = 0.0f;
+float rotReferenceCount = 0.0f;
+float rotTrajectoryStartCount = 0.0f;
+uint32_t rotTrajectoryStartUs = 0;
+bool rotTrajectoryActive = false;
+
 bool rotPositionMode = false;
 int rotLastPwmCommand = 0;
 float rotLastPTermPwm = 0.0f;
@@ -246,7 +253,18 @@ bool rotMotorBegin() {
 }
 
 void rotMotorSetTargetCounts(float targetCounts) {
+  const float currentCount =
+      (float)rotMotorGetCount();
+
+  rotTrajectoryStartCount = currentCount;
+  rotReferenceCount = currentCount;
   rotTargetCount = targetCounts;
+  rotTrajectoryStartUs = micros();
+
+  rotTrajectoryActive =
+      fabsf(rotTargetCount - rotTrajectoryStartCount) >
+      ROT_PID_DEADBAND_COUNTS;
+
   rotPositionMode = true;
   rotPid.initialized = false;
   rotLastPTermPwm = 0.0f;
@@ -258,9 +276,54 @@ void rotMotorSetTargetDeg(float targetDeg) {
   rotMotorSetTargetCounts(rotMotorDegToCounts(targetDeg));
 }
 
+void rotMotorUpdateTrajectory() {
+  if (!rotTrajectoryActive) {
+    rotReferenceCount = rotTargetCount;
+    return;
+  }
+
+  const float speedCountsS =
+      fabsf(rotMotorDegToCounts(
+          ROT_TRAJECTORY_SPEED_DEG_S));
+
+  if (speedCountsS <= 0.0f) {
+    rotReferenceCount = rotTargetCount;
+    rotTrajectoryActive = false;
+    return;
+  }
+
+  const uint32_t elapsedUs =
+      micros() - rotTrajectoryStartUs;
+
+  const float maxTravelCounts =
+      speedCountsS *
+      (float)elapsedUs *
+      1e-6f;
+
+  const float trajectoryDelta =
+      rotTargetCount -
+      rotTrajectoryStartCount;
+
+  if (maxTravelCounts >= fabsf(trajectoryDelta)) {
+    rotReferenceCount = rotTargetCount;
+    rotTrajectoryActive = false;
+    return;
+  }
+
+  rotReferenceCount =
+      rotTrajectoryStartCount +
+      ((trajectoryDelta >= 0.0f)
+          ? maxTravelCounts
+          : -maxTravelCounts);
+}
+
 void rotMotorZero() {
   rotMotorResetCount(0);
   rotTargetCount = 0.0f;
+  rotReferenceCount = 0.0f;
+  rotTrajectoryStartCount = 0.0f;
+  rotTrajectoryStartUs = micros();
+  rotTrajectoryActive = false;
   rotPid.initialized = false;
   rotLastPTermPwm = 0.0f;
   rotLastITermPwm = 0.0f;
@@ -268,6 +331,14 @@ void rotMotorZero() {
 }
 
 void rotMotorStop() {
+  const float currentCount =
+      (float)rotMotorGetCount();
+
+  rotTargetCount = currentCount;
+  rotReferenceCount = currentCount;
+  rotTrajectoryStartCount = currentCount;
+  rotTrajectoryStartUs = micros();
+  rotTrajectoryActive = false;
   rotPositionMode = false;
   rotPid.initialized = false;
   rotLastPwmCommand = 0;
@@ -278,7 +349,14 @@ void rotMotorStop() {
 }
 
 bool rotMotorAtTarget() {
-  return fabsf(rotTargetCount - (float)rotMotorGetCount()) <= ROT_PID_DEADBAND_COUNTS;
+  if (rotTrajectoryActive) {
+    return false;
+  }
+
+  return fabsf(
+      rotTargetCount -
+      (float)rotMotorGetCount())
+      <= ROT_PID_DEADBAND_COUNTS;
 }
 
 void rotMotorUpdate() {
@@ -288,7 +366,12 @@ void rotMotorUpdate() {
     return;
   }
 
-  float output = rotMotorPidPosition((float)rotMotorGetCount(), rotTargetCount, rotPid);
+  rotMotorUpdateTrajectory();
+
+  float output = rotMotorPidPosition(
+      (float)rotMotorGetCount(),
+      rotReferenceCount,
+      rotPid);
   rotLastPwmCommand = (int)lroundf(output);
 
   if (rotLastPwmCommand == 0) {
