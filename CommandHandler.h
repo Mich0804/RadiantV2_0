@@ -5,6 +5,48 @@
 
 extern BluetoothSerial SerialBT;
 
+enum CommandSource {
+  COMMAND_SOURCE_USB,
+  COMMAND_SOURCE_BLUETOOTH
+};
+
+bool rotDonePending = false;
+CommandSource rotDoneSource = COMMAND_SOURCE_USB;
+
+void commandCancelRotDone() {
+  rotDonePending = false;
+}
+
+void commandArmRotDone(CommandSource source) {
+  rotDoneSource = source;
+  rotDonePending = true;
+}
+
+void commandUpdateRotDone() {
+  if (!rotDonePending) {
+    return;
+  }
+
+  if (!rotPositionMode) {
+    commandCancelRotDone();
+    return;
+  }
+
+  if (!rotMotorAtTarget()) {
+    return;
+  }
+
+  if (rotDoneSource == COMMAND_SOURCE_BLUETOOTH) {
+    if (SerialBT.hasClient()) {
+      SerialBT.println("ROT DONE");
+    }
+  } else {
+    Serial.println("ROT DONE");
+  }
+
+  commandCancelRotDone();
+}
+
 void commandPrintHelp(Print &out) {
   out.println("Commands:");
   out.println("  OUTER <mm>");
@@ -24,7 +66,11 @@ void commandReply(Print &out, const char *message) {
   out.println(message);
 }
 
-void commandHandleLine(String line, Print &out) {
+void commandHandleLine(
+    String line,
+    Print &out,
+    CommandSource source)
+{
   line.trim();
   if (line.length() == 0) {
     return;
@@ -38,12 +84,14 @@ void commandHandleLine(String line, Print &out) {
   command.toUpperCase();
 
   if (command == "HOME") {
+    commandCancelRotDone();
     stageHome();
     commandReply(out, "OK HOME");
     return;
   }
 
   if (command == "STOP") {
+    commandCancelRotDone();
     stageStopAll();
     stageChangeState(STOPPED);
     commandReply(out, "OK STOP");
@@ -51,6 +99,7 @@ void commandHandleLine(String line, Print &out) {
   }
 
   if (command == "ZERO_ROT") {
+    commandCancelRotDone();
     stageZeroRot();
     commandReply(out, "OK ZERO_ROT");
     return;
@@ -136,6 +185,7 @@ void commandHandleLine(String line, Print &out) {
 
   if (command == "ROT") {
     if (stageSetRotDeg(value)) {
+      commandArmRotDone(source);
       commandReply(out, "OK ROT");
     } else {
       commandReply(out, "ERR ROT rejected");
@@ -147,14 +197,27 @@ void commandHandleLine(String line, Print &out) {
   commandPrintHelp(out);
 }
 
-void commandPollStream(Stream &stream, Print &out) {
+void commandPollStream(
+    Stream &stream,
+    Print &out,
+    CommandSource source)
+{
   while (stream.available()) {
     String line = stream.readStringUntil('\n');
-    commandHandleLine(line, out);
+    commandHandleLine(line, out, source);
   }
 }
 
 void commandUpdate() {
-  commandPollStream(Serial, Serial);
-  commandPollStream(SerialBT, SerialBT);
+  commandPollStream(
+      Serial,
+      Serial,
+      COMMAND_SOURCE_USB);
+
+  commandPollStream(
+      SerialBT,
+      SerialBT,
+      COMMAND_SOURCE_BLUETOOTH);
+
+  commandUpdateRotDone();
 }
