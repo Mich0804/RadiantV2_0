@@ -53,7 +53,7 @@ const float INNER_ACCEL_STEPS_S2 = 800.0f;
 const long TRANS_POSITION_TOLERANCE_STEPS = 3;
 
 const float OUTER_HOMING_SPEED_MM_S = 1.6f;
-const float INNER_HOMING_SPEED_MM_S = 0.8f;
+const float INNER_HOMING_SPEED_MM_S = 1.6f;
 const float OUTER_HOMING_SPEED_STEPS_S = OUTER_HOMING_SPEED_MM_S * OUTER_STEPS_PER_MM;
 const float INNER_HOMING_SPEED_STEPS_S = INNER_HOMING_SPEED_MM_S * INNER_STEPS_PER_MM;
 
@@ -81,8 +81,8 @@ const float RMT_SPEED_REFRESH_DELTA = 50.0f;
 
 const int PWM_FREQ_HZ = 20000;
 const int PWM_RES_BITS = 10;
-const int PWM_MIN_EFFECTIVE = 300;
-const int PWM_MAX_EFFECTIVE = 1000;
+const int PWM_MIN_EFFECTIVE = 200;
+const int PWM_MAX_EFFECTIVE = 500;
 
 const int ENCODER_CPT = 512;
 const int QUAD_COUNTS_PER_REV = ENCODER_CPT * 4;
@@ -93,11 +93,11 @@ const float GEAR_DIRECTION_SIGN = -1.0f;
 const float NEEDLE_DEG_PER_ENCODER_DEG =
     GEAR_DIRECTION_SIGN * MOTOR_GEAR_TEETH / NEEDLE_GEAR_TEETH;
 
-const float ROT_PID_KP = 0.5f;
-const float ROT_PID_KI = 0.04f;
-const float ROT_PID_KD = 0.01f;
+const float ROT_PID_KP = 1.0f;
+const float ROT_PID_KI = 0.05f;
+const float ROT_PID_KD = 0.0f;
 const float ROT_PID_I_LIMIT = 5000.0f;
-const float ROT_PID_OUT_LIMIT_PWM = 1000.0f;
+const float ROT_PID_OUT_LIMIT_PWM = 500.0f;
 const float ROT_PID_DEADBAND_COUNTS = 3.0f;
 
 const uint32_t STATUS_INTERVAL_MS = 250;
