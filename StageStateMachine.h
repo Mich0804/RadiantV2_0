@@ -333,6 +333,10 @@ void stageUpdate() {
         as5600SetZero(outerSpindleEncoder);
         as5600SetZero(innerSpindleEncoder);
         rotTargetCount = (float)rotMotorGetCount();
+        rotReferenceCount = rotTargetCount;
+        rotTrajectoryStartCount = rotTargetCount;
+        rotTrajectoryStartUs = micros();
+        rotTrajectoryActive = false;
         rotPositionMode = false;
         stageBtWasConnected = false;
         stageChangeState(NORMAL_RUN);
@@ -440,6 +444,8 @@ void stagePrintStatus(Print &out) {
   out.print( rotMotorGetCount());
   out.print(" rot_deg=");
   out.print(rotMotorGetDeg(), 2);
+  out.print(" rot_reference_deg=");
+  out.print(rotMotorCountsToDeg(rotReferenceCount), 2);
   out.print(" rot_target_deg=");
   out.print(rotMotorCountsToDeg(rotTargetCount), 2);
   out.print(" bt=");
