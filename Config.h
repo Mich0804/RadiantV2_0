@@ -100,6 +100,9 @@ const float ROT_PID_I_LIMIT = 5000.0f;
 const float ROT_PID_OUT_LIMIT_PWM = 500.0f;
 const float ROT_PID_DEADBAND_COUNTS = 3.0f;
 
+// Constant-speed linear rotation reference trajectory.
+const float ROT_TRAJECTORY_SPEED_DEG_S = 180.0f;
+
 const uint32_t STATUS_INTERVAL_MS = 250;
 const uint32_t AS5600_UPDATE_INTERVAL_MS = 10;
 const uint32_t AS5600_I2C_FREQUENCY_HZ = 400000;
