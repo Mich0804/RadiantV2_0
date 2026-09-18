@@ -94,7 +94,7 @@ void telemetryUpdate()
       innerAxis.referenceSpeedMmS();
 
   sample.rotationTargetDeg =
-      rotMotorCountsToDeg(rotTargetCount);
+      rotMotorCountsToDeg(rotReferenceCount);
 
   sample.rotationMeasuredDeg =
       rotMotorGetDeg();
